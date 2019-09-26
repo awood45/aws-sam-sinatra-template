@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  {{ cookiecutter.project_name }}
+
+  AWS SAM Template using Sinatra on Ruby for {{ cookiecutter.project_name }}
+
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  SinatraFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.handler
+      Runtime: ruby2.5
+      CodeUri: app/
+      MemorySize: 512
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AppTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AppTable
+      Events:
+        SinatraApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+            RestApiId: !Ref SinatraAPI
+  SinatraAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: SinatraAPI
+      StageName: Prod
+      DefinitionBody:
+        swagger: '2.0'
+        basePath: '/Prod'
+        info:
+          title: !Ref AWS::StackName
+        paths:
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              responses: {}
+              x-amazon-apigateway-integration:
+                uri:
+                  !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SinatraFunction.Arn}/invocations'
+                passthroughBehavior: "when_no_match"
+                httpMethod: POST
+                type: "aws_proxy"
+          /:
+            get:
+              responses: {}
+              x-amazon-apigateway-integration:
+                uri:
+                  !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SinatraFunction.Arn}/invocations'
+                passthroughBehavior: "when_no_match"
+                httpMethod: POST
+                type: "aws_proxy"
+  ConfigLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SinatraFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SinatraFunction
+      Principal: apigateway.amazonaws.com
+  AppTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: hk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: hk
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  SinatraErrorAlarm:
+     Type: AWS::CloudWatch::Alarm
+     Properties:
+       ComparisonOperator: GreaterThanOrEqualToThreshold
+       EvaluationPeriods: 3
+       Threshold: 1
+       Dimensions:
+         - Name: FunctionName
+           Value: !Ref SinatraFunction
+       Statistic: Sum
+       TreatMissingData: missing
+       Namespace: AWS/Lambda
+       Period: 60
+       MetricName: Errors
+  SinatraP50LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 3
+      Threshold: 250
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SinatraFunction
+      ExtendedStatistic: p50
+      TreatMissingData: missing
+      Namespace: AWS/Lambda
+      Period: 60
+      MetricName: Duration
+  SinatraP99LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 3
+      Threshold: 1000
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SinatraFunction
+      ExtendedStatistic: p99
+      TreatMissingData: missing
+      Namespace: AWS/Lambda
+      Period: 60
+      MetricName: Duration
+
+Outputs:
+  SinatraAppUrl:
+    Description: App endpoint URL
+    Value: !Sub "https://${SinatraAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
