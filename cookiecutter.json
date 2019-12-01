@@ -1,6 +1,4 @@
 {
     "project_name": "aws-serverless-sinatra",
-    "runtime": "ruby2.5",
-    "s3_bucket": "REPLACE",
-    "aws_region": "us-east-2"
+    "runtime": "ruby2.5"
 }

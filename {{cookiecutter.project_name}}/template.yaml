@@ -78,19 +78,19 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
   SinatraErrorAlarm:
-     Type: AWS::CloudWatch::Alarm
-     Properties:
-       ComparisonOperator: GreaterThanOrEqualToThreshold
-       EvaluationPeriods: 3
-       Threshold: 1
-       Dimensions:
-         - Name: FunctionName
-           Value: !Ref SinatraFunction
-       Statistic: Sum
-       TreatMissingData: missing
-       Namespace: AWS/Lambda
-       Period: 60
-       MetricName: Errors
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 3
+      Threshold: 1
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SinatraFunction
+      Statistic: Sum
+      TreatMissingData: missing
+      Namespace: AWS/Lambda
+      Period: 60
+      MetricName: Errors
   SinatraP50LatencyAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:

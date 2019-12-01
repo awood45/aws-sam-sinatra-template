@@ -13,9 +13,7 @@ sam local start-api
 
 ```shell
 sam build
-sam package --output-template packaged.yaml --s3-bucket my-source-s3-bucket
-sam deploy --stack-name {{ cookiecutter.project_name }} --template-file packaged.yaml --capabilities CAPABILITY_IAM
-aws cloudformation describe-stacks --stack-name {{ cookiecutter.project_name }} --query 'Stacks[].Outputs'
+sam deploy --guided
 ```
 
 The final command will return the API Gateway endpoint.
